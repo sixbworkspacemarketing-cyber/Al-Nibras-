@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #D4AF37;
+  --color-primary-light: #F2D06B;
+  --color-primary-dark: #997A1F;
+  --color-secondary: #001F3F;
+  --color-secondary-light: #003366;
+  --color-secondary-dark: #001122;
+  --color-accent: #FFD700;
+}
+
+:root {
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 0, 0, 0;
+  --background-end-rgb: 0, 0, 0;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-start-rgb));
+  min-height: 100vh;
+  transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+/* Branded Splash Screen Animations */
+@keyframes pulse-gold {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.4));
+  }
+  50% {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 30px rgba(212, 175, 55, 0.7));
+  }
+}
+
+.animate-pulse-gold {
+  animation: pulse-gold 2s infinite ease-in-out;
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
+
+/* Smooth transitions for theme switching */
+* {
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+/* Light mode overrides (to be used with context) */
+.light-mode {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 248, 250, 252;
+  --background-end-rgb: 248, 250, 252;
+}
+
+.light-mode body {
+  background: #f8fafc;
+  color: #0f172a;
+}
