@@ -5,6 +5,9 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import NibrasAIChat from "@/components/NibrasAIChat";
 import AppPreview from "@/components/AppPreview";
+import PremiumBackground from "@/components/PremiumBackground";
+import LoadingScreen from "@/components/LoadingScreen";
+import AnimatedNumber from "@/components/ui/AnimatedNumber";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -38,7 +41,10 @@ import {
   Filter,
   Moon,
   Sun,
-  Loader2
+  Loader2,
+  Sparkles,
+  Star,
+  Zap
 } from "lucide-react";
 import confetti from "canvas-confetti";
 
@@ -472,27 +478,7 @@ export default function Home() {
     }
   }, [achievements, hasMounted, previouslyUnlocked]);
 
-  if (!hasMounted || !authChecked) return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-8 text-center space-y-6">
-      <motion.div 
-        animate={{ 
-          scale: [1, 1.05, 1],
-          opacity: [0.8, 1, 0.8] 
-        }}
-        transition={{ duration: 2, repeat: Infinity }}
-        className="relative"
-      >
-        <img src="/logo-new.png" alt="Loading..." className="h-40 w-auto animate-pulse-gold" />
-      </motion.div>
-      <div className="space-y-2">
-        <h2 className="text-xl font-black text-[#D4AF37] uppercase tracking-[0.3em]">Al Nibras Finance</h2>
-        <div className="flex items-center justify-center gap-2 text-gray-500 font-bold uppercase tracking-widest text-[10px]">
-          <Loader2 className="w-3 h-3 animate-spin" />
-          Securing your access...
-        </div>
-      </div>
-    </div>
-  );
+  if (!hasMounted || !authChecked) return <LoadingScreen />;
 
   const currentTheme = isPremium
     ? {
@@ -527,7 +513,37 @@ export default function Home() {
   const [showPreview, setShowPreview] = useState(false);
 
   return (
-    <main className={`min-h-screen ${currentTheme.bg} ${currentTheme.font} text-white max-w-6xl mx-auto relative pb-20`}>
+    <main className={`min-h-screen ${currentTheme.bg} ${currentTheme.font} text-white max-w-6xl mx-auto relative pb-20 overflow-hidden`}>
+      <PremiumBackground />
+      
+      {/* Floating Particles */}
+      <motion.div 
+        className="fixed inset-0 pointer-events-none z-[5]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        {[...Array(6)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-1 h-1 bg-[#D4AF37] rounded-full"
+            animate={{
+              y: [-20, -100, -20],
+              opacity: [0, 1, 0],
+              x: [0, Math.random() * 50 - 25, 0],
+            }}
+            transition={{
+              duration: 3 + Math.random() * 2,
+              repeat: Infinity,
+              delay: i * 0.5,
+            }}
+            style={{
+              left: `${15 + i * 15}%`,
+              top: `${60 + Math.random() * 30}%`,
+            }}
+          />
+        ))}
+      </motion.div>
+      
       {/* Header Container - Mobile Optimized */}
       <div className="flex justify-between items-center w-full p-4 md:p-8 relative">
         {/* Left Side: Text Branding - Hidden on mobile, shown on desktop */}
