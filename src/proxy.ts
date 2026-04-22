@@ -19,19 +19,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // 1. Admin Restriction
-  const isAdminEmail = user.email === 'alnibras.kids@gmail.com'
+  // Simple Admin check by email only (Faster)
+  const isSuperAdmin = user.email === 'alnibras.kids@gmail.com'
   
-  // Look up their strict role profile
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  const role = profile?.role || 'child'
-  const isSuperAdmin = role === 'admin' && isAdminEmail
-
   const homeUrl = new URL('/', request.url)
   const adminUrl = new URL('/admin', request.url)
 

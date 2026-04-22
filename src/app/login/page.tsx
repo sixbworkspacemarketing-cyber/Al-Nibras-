@@ -23,6 +23,13 @@ export default function LoginPage() {
     const [resetSent, setResetSent] = useState(false);
     const router = useRouter();
 
+    // If already logged in, go to home
+    useState(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) window.location.href = '/';
+        });
+    });
+
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -59,9 +66,8 @@ export default function LoginPage() {
                 showToast(error.message, 'error');
                 setError(error.message);
             } else {
-                showToast('Success! Please verify your email to activate your account.');
-                setIsSignUp(false);
-                setPassword('');
+                showToast('Account created! Welcome.', 'success');
+                window.location.href = '/';
             }
         } else {
             let loginEmail = identifier;
@@ -91,7 +97,7 @@ export default function LoginPage() {
                 setError(error.message);
             } else {
                 showToast('Welcome back!', 'success');
-                router.push('/');
+                window.location.href = '/';
             }
         }
         setLoading(false);

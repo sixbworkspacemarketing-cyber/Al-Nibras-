@@ -22,9 +22,6 @@ export const metadata: Metadata = {
   icons: {
     icon: "/favicon.svg",
   },
-  other: {
-    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://api.openai.com;",
-  },
 };
 
 export default async function RootLayout({
