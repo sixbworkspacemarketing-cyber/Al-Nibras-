@@ -67,27 +67,30 @@ export default function LoginPage() {
         setLoading(true);
         setError(null);
         
-        let res = await supabase.auth.signInWithPassword({
+        const signInRes = await supabase.auth.signInWithPassword({
             email: 'test@alnibras.com',
             password: 'password123',
         });
         
-        if (res.error) {
-            res = await supabase.auth.signUp({
+        if (signInRes.error) {
+            const signUpRes = await supabase.auth.signUp({
                 email: 'test@alnibras.com',
                 password: 'password123',
                 options: { data: { full_name: 'Universal Tester' } }
             });
-            if (!res.error) {
-                 await supabase.auth.signInWithPassword({
+            if (!signUpRes.error) {
+                 const autoSignIn = await supabase.auth.signInWithPassword({
                     email: 'test@alnibras.com',
                     password: 'password123',
                 });
+                if (autoSignIn.error) {
+                    setError(autoSignIn.error.message);
+                } else {
+                    router.push('/');
+                }
+            } else {
+                setError(signUpRes.error.message);
             }
-        }
-        
-        if (res.error) {
-            setError(res.error.message);
         } else {
             router.push('/');
         }
