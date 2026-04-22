@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useLanguage } from '@/lib/LanguageContext';
 import LanguageToggle from '@/components/ui/LanguageToggle';
+import { supabase } from '@/lib/supabase';
 import { Users, Wallet, BookOpen, Gamepad2, Receipt, ArrowRight, ArrowLeft, Shield } from 'lucide-react';
 
 export default function HomePage() {
