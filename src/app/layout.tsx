@@ -1,4 +1,5 @@
 import NibrasAIChat from "@/components/NibrasAIChat";
+import Pulse from "@/components/Pulse";
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -51,6 +52,7 @@ export default async function RootLayout({
             <AppProvider>
               {children}
               <NibrasAIChat mode="mentor" userName="Friend" />
+              <Pulse />
             </AppProvider>
           </LanguageProvider>
         </ThemeProvider>

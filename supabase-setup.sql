@@ -13,10 +13,15 @@ drop table if exists public.profiles cascade;
 create table public.profiles (
   id uuid references auth.users on delete cascade not null primary key,
   full_name text not null,
+  email text,
   role text default 'child' check (role in ('parent', 'child', 'admin')),
+  mobile_number text,
+  cnic text,
   balance numeric default 0,
   avatar_url text,
   language text default 'en',
+  parent_pin text,
+  last_active_at timestamp with time zone default timezone('utc'::text, now()),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
@@ -31,6 +36,14 @@ using (auth.uid() = id);
 create policy "Users can update own profile" 
 on profiles for update 
 using (auth.uid() = id);
+
+create policy "Admins can view all profiles"
+on profiles for select
+using (
+  exists (
+    select 1 from profiles where id = auth.uid() and role = 'admin'
+  )
+);
 
 ----------------------------------------------------
 -- 2. TRANSACTIONS TABLE
@@ -57,7 +70,7 @@ on transactions for insert
 with check (auth.uid() = sender_id);
 
 ----------------------------------------------------
--- 3. COURSES & GAMES (Global Content)
+-- 3. COURSES & LMS
 ----------------------------------------------------
 create table public.app_courses (
   id uuid default gen_random_uuid() primary key,
@@ -65,48 +78,136 @@ create table public.app_courses (
   description text,
   thumbnail_url text,
   video_url text,
+  category text,
   price numeric default 0,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
-alter table public.app_courses enable row level security;
+create table public.app_videos (
+  id uuid default gen_random_uuid() primary key,
+  course_id uuid references public.app_courses(id) on delete cascade,
+  title text not null,
+  video_url text not null, -- Links (YouTube/Vimeo)
+  duration text,
+  order_index integer default 0,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
 
--- Everyone can view courses, only admins could edit (if role was enforced)
-create policy "Anyone can view courses" 
-on app_courses for select 
-using (true);
+create table public.app_books (
+  id uuid default gen_random_uuid() primary key,
+  title text not null,
+  author text,
+  url text not null,
+  thumbnail_url text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+create table public.user_progress (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  content_type text not null, -- 'video', 'course', 'book'
+  content_id uuid not null,
+  completed boolean default false,
+  completed_at timestamp with time zone,
+  last_accessed_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+alter table public.app_courses enable row level security;
+alter table public.app_videos enable row level security;
+alter table public.app_books enable row level security;
+alter table public.user_progress enable row level security;
+
+-- Select policies
+create policy "Anyone can view courses" on app_courses for select using (true);
+create policy "Anyone can view videos" on app_videos for select using (true);
+create policy "Anyone can view books" on app_books for select using (true);
+create policy "Users view own progress" on user_progress for select using (auth.uid() = user_id);
 
 ----------------------------------------------------
 -- 4. GAMIFICATION BADGES
 ----------------------------------------------------
+create table public.app_badges (
+  id uuid default gen_random_uuid() primary key,
+  title text not null,
+  icon text,
+  description text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
 create table public.user_badges (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references public.profiles(id) on delete cascade not null,
-  badge_name text not null,
-  description text,
-  icon_url text,
+  badge_id uuid references public.app_badges(id) on delete cascade,
   earned_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+alter table public.app_badges enable row level security;
 alter table public.user_badges enable row level security;
 
-create policy "Users view own badges" 
-on user_badges for select 
-using (auth.uid() = user_id);
+create policy "Anyone can view badges" on app_badges for select using (true);
+create policy "Users view own badges" on user_badges for select using (auth.uid() = user_id);
 
 ----------------------------------------------------
--- 5. AUTOMATIC PROFILE CREATION TRIGGER
+-- 5. TRACKING & ANALYTICS
 ----------------------------------------------------
--- This automatically creates a profile with 0 balance when someone signs up
+create table public.site_stats (
+  id date primary key default current_date,
+  visits_count integer default 0,
+  unique_visitors integer default 0,
+  updated_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+create table public.audit_logs (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users(id) on delete set null,
+  ip_address text,
+  action text not null,
+  details jsonb,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+alter table public.site_stats enable row level security;
+alter table public.audit_logs enable row level security;
+
+-- Only admins can see stats and logs
+create policy "Admins view stats" on site_stats for select using (
+  exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+);
+create policy "Admins view logs" on audit_logs for select using (
+  exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+);
+
+create table public.app_links (
+  id uuid default gen_random_uuid() primary key,
+  title text not null,
+  url text not null,
+  category text default 'general', -- 'social', 'support', 'education'
+  icon text,
+  is_active boolean default true,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+alter table public.app_links enable row level security;
+create policy "Anyone can view active links" on app_links for select using (is_active = true);
+create policy "Admins can manage links" on app_links for all using (
+  exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+);
+
+----------------------------------------------------
+-- 7. AUTOMATIC PROFILE CREATION TRIGGER
+----------------------------------------------------
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, full_name, role, balance)
+  insert into public.profiles (id, full_name, email, role, mobile_number, cnic, balance)
   values (
     new.id, 
     coalesce(new.raw_user_meta_data->>'full_name', 'New User'), 
-    'child', -- default role
-    0        -- STRICT 0 BALANCE AS REQUESTED
+    new.email,
+    coalesce(new.raw_user_meta_data->>'role', 'child'),
+    new.raw_user_meta_data->>'mobile_number',
+    new.raw_user_meta_data->>'cnic',
+    0
   );
   return new;
 end;
@@ -118,9 +219,3 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
-----------------------------------------------------
--- (OPTIONAL) INSERT SOME DUMMY COURSES TO START
-----------------------------------------------------
-insert into public.app_courses (title, description, price) values 
-('Islamic Finance 101', 'Learn the basics of Halal money management.', 0),
-('Savings Masterclass', 'How to save your pocket money efficiently.', 0);

@@ -11,8 +11,17 @@ import { Users, Wallet, BookOpen, Gamepad2, Receipt, ArrowRight, ArrowLeft, Shie
 export default function HomePage() {
   const { t, isRTL } = useLanguage();
   const [mounted, setMounted] = useState(false);
+  const [links, setLinks] = useState<any[]>([]);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { 
+    setMounted(true);
+    fetchLinks();
+  }, []);
+
+  const fetchLinks = async () => {
+    const { data } = await supabase.from('app_links').select('*').order('created_at', { ascending: true });
+    if (data) setLinks(data);
+  };
 
   if (!mounted) {
     return <div className="min-h-screen bg-[#0a0a0a]" />;
@@ -251,6 +260,35 @@ export default function HomePage() {
               ✓ {t('shariaCompliant')} • {t('zeroInterest')}
             </span>
           </motion.div>
+
+          {/* Dynamic Quick Links from DB */}
+          {links.length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.2 }}
+              className="mt-12 w-full max-w-3xl"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="h-[1px] flex-1 bg-white/5"></div>
+                <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em]">Quick Access</span>
+                <div className="h-[1px] flex-1 bg-white/5"></div>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {links.map((link) => (
+                  <a 
+                    key={link.id} 
+                    href={link.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-indigo-500/30 hover:bg-indigo-500/5 transition-all group"
+                  >
+                    <span className="text-[10px] font-bold text-slate-400 group-hover:text-white transition-colors text-center">{link.title}</span>
+                  </a>
+                ))}
+              </div>
+            </motion.div>
+          )}
         </div>
 
         {/* Footer */}

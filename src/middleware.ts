@@ -19,6 +19,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
+  // 1. Admin Restriction
+  const isAdminEmail = user.email === 'alnibras.kids@gmail.com'
+  
   // Look up their strict role profile
   const { data: profile } = await supabase
     .from('profiles')
@@ -27,15 +30,19 @@ export async function middleware(request: NextRequest) {
     .single()
 
   const role = profile?.role || 'child'
+  const isSuperAdmin = role === 'admin' && isAdminEmail
+
   const homeUrl = new URL('/', request.url)
   const adminUrl = new URL('/admin', request.url)
 
-  if (role === 'admin' && pathname === '/') {
-    return Response.redirect(adminUrl)
+  // If they are on admin page but not super admin email, kick them out
+  if (pathname.startsWith('/admin') && !isSuperAdmin) {
+    return NextResponse.redirect(homeUrl)
   }
 
-  if (role !== 'admin' && pathname.startsWith('/admin')) {
-    return Response.redirect(homeUrl)
+  // If they are admin and on root, send to admin dash
+  if (isSuperAdmin && pathname === '/') {
+    return NextResponse.redirect(adminUrl)
   }
 
   return response
