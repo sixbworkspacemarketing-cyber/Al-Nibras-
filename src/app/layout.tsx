@@ -6,6 +6,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/lib/ThemeContext";
 import { AppProvider } from "@/lib/AppContext";
 import { LanguageProvider } from "@/lib/LanguageContext";
+import { ToastProvider } from "@/components/ui/ToastProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -49,11 +50,13 @@ export default async function RootLayout({
       <body className={`${inter.className} bg-black text-white antialiased`}>
         <ThemeProvider>
           <LanguageProvider>
-            <AppProvider>
-              {children}
-              <NibrasAIChat mode="mentor" userName="Friend" />
-              <Pulse />
-            </AppProvider>
+            <ToastProvider>
+              <AppProvider>
+                {children}
+                <NibrasAIChat mode="mentor" userName="Friend" />
+                <Pulse />
+              </AppProvider>
+            </ToastProvider>
           </LanguageProvider>
         </ThemeProvider>
         {SpeedInsightsComponent ? <SpeedInsightsComponent /> : null}

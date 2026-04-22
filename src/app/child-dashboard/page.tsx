@@ -16,21 +16,47 @@ import {
   Star,
   Sparkles,
 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 import Image from 'next/image';
-
-const receivedTransfers: any[] = [];
 
 export default function ChildDashboard() {
   const router = useRouter();
   const { t } = useLanguage();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'courses' | 'games'>('dashboard');
+  const [stats, setStats] = useState({
+    balance: 0,
+    courses: 0,
+    achievements: 0,
+    transactions: [] as any[]
+  });
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { 
+    setMounted(true);
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    const [profileRes, coursesRes, badgesRes] = await Promise.all([
+      supabase.from('profiles').select('wallet_balance').eq('id', session.user.id).single(),
+      supabase.from('app_courses').select('*', { count: 'exact', head: true }),
+      supabase.from('app_badges').select('*', { count: 'exact', head: true }),
+    ]);
+
+    setStats({
+      balance: profileRes.data?.wallet_balance || 0,
+      courses: coursesRes.count || 0,
+      achievements: badgesRes.count || 0,
+      transactions: [] // Still static for now as we don't have a transactions table yet
+    });
+  };
 
   if (!mounted) return <div className="min-h-screen bg-[#0a0a0a]" />;
 
-  const totalReceived = receivedTransfers.reduce((sum, tx) => sum + tx.amount, 0);
+  const totalReceived = stats.balance;
 
   const tabs = [
     { id: 'dashboard' as const, label: t('dashboard'), icon: <Star className="w-4 h-4" /> },
@@ -101,9 +127,9 @@ export default function ChildDashboard() {
         {/* Stats Row */}
         <div className="grid grid-cols-3 gap-3 mb-10">
           {[
-            { icon: <ArrowDownLeft className="w-5 h-5 text-emerald-400" />, label: t('totalReceived'), value: `PKR ${totalReceived.toLocaleString('en-PK')}`, color: 'emerald' },
-            { icon: <BookOpen className="w-5 h-5 text-blue-400" />, label: t('courses'), value: '6', color: 'blue' },
-            { icon: <Trophy className="w-5 h-5 text-amber-400" />, label: t('achievements'), value: '12', color: 'amber' },
+            { icon: <ArrowDownLeft className="w-5 h-5 text-emerald-400" />, label: t('totalReceived'), value: `PKR ${stats.balance.toLocaleString('en-PK')}`, color: 'emerald' },
+            { icon: <BookOpen className="w-5 h-5 text-blue-400" />, label: t('courses'), value: stats.courses.toString(), color: 'blue' },
+            { icon: <Trophy className="w-5 h-5 text-amber-400" />, label: t('achievements'), value: stats.achievements.toString(), color: 'amber' },
           ].map((stat, i) => (
             <motion.div
               key={i}
@@ -129,7 +155,7 @@ export default function ChildDashboard() {
           >
             <BookOpen className="w-8 h-8 text-blue-400 mb-3" />
             <p className="text-base font-bold text-white">{t('courses')}</p>
-            <p className="text-[10px] text-gray-500 mt-1">6 {t('courses').toLowerCase()}</p>
+            <p className="text-[10px] text-gray-500 mt-1">{stats.courses} {t('courses').toLowerCase()}</p>
             <div className="absolute -bottom-4 -right-4 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-400/20 transition-all" />
           </motion.button>
 
@@ -141,7 +167,7 @@ export default function ChildDashboard() {
           >
             <Gamepad2 className="w-8 h-8 text-amber-400 mb-3" />
             <p className="text-base font-bold text-white">{t('games')}</p>
-            <p className="text-[10px] text-gray-500 mt-1">6 {t('games').toLowerCase()}</p>
+            <p className="text-[10px] text-gray-500 mt-1">COMING SOON</p>
             <div className="absolute -bottom-4 -right-4 w-20 h-20 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-400/20 transition-all" />
           </motion.button>
         </div>
@@ -150,7 +176,7 @@ export default function ChildDashboard() {
         <section>
           <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">{t('receivedTransfers')}</h3>
           <div className="bg-white/5 border border-white/10 rounded-3xl backdrop-blur-md overflow-hidden divide-y divide-white/5">
-            {receivedTransfers.map((tx) => (
+            {stats.transactions.map((tx) => (
               <div key={tx.id} className="p-5 flex items-center justify-between group hover:bg-white/5 transition-all">
                 <div className="flex items-center gap-4">
                   <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-emerald-500/10 text-emerald-500 border border-white/5">

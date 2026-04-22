@@ -7,8 +7,10 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Lock, Mail, ArrowRight, ShieldCheck } from 'lucide-react';
 import Image from 'next/image';
+import { useToast } from '@/components/ui/ToastProvider';
 
 export default function LoginPage() {
+    const { showToast } = useToast();
     const [identifier, setIdentifier] = useState('');
     const [mobileNumber, setMobileNumber] = useState('');
     const [cnic, setCnic] = useState('');
@@ -54,9 +56,10 @@ export default function LoginPage() {
                 }
             });
             if (error) {
+                showToast(error.message, 'error');
                 setError(error.message);
             } else {
-                alert('Success! Please verify your email to activate your account.');
+                showToast('Success! Please verify your email to activate your account.');
                 setIsSignUp(false);
                 setPassword('');
             }
@@ -84,8 +87,10 @@ export default function LoginPage() {
                 password,
             });
             if (error) {
+                showToast(error.message, 'error');
                 setError(error.message);
             } else {
+                showToast('Welcome back!', 'success');
                 router.push('/');
             }
         }

@@ -14,8 +14,10 @@ import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
     BarChart, Bar, Cell, PieChart, Pie
 } from 'recharts';
+import { useToast } from '@/components/ui/ToastProvider';
 
 export default function AdminDashboardPage() {
+    const { showToast } = useToast();
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({ 
@@ -113,8 +115,10 @@ export default function AdminDashboardPage() {
         }
 
         const { error } = await supabase.from(table).insert([payload]);
-        if (error) alert(error.message);
-        else {
+        if (error) {
+            showToast(error.message, 'error');
+        } else {
+            showToast(`${assetType.toUpperCase()} deployed successfully!`, 'success');
             setIsAddModalOpen(false);
             fetchDashboardData();
             (e.target as HTMLFormElement).reset();
@@ -123,15 +127,28 @@ export default function AdminDashboardPage() {
 
     const handleDeleteAsset = async (table: string, id: string) => { 
         if (!confirm("Are you sure you want to delete this?")) return;
-        await supabase.from(table).delete().eq('id', id); 
-        fetchDashboardData(); 
+        const { error } = await supabase.from(table).delete().eq('id', id); 
+        if (error) {
+            showToast(error.message, 'error');
+        } else {
+            showToast('Asset removed from database.', 'info');
+            fetchDashboardData(); 
+        }
     };
 
     const handleToggleAdmin = async (userId: string, currentRole: string) => {
         const newRole = currentRole === 'admin' ? 'child' : 'admin';
-        if (userId === user.id) { alert("You can't change your own admin status!"); return; }
-        await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
-        fetchDashboardData();
+        if (userId === user.id) { 
+            showToast("You can't change your own admin status!", 'error'); 
+            return; 
+        }
+        const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
+        if (error) {
+            showToast(error.message, 'error');
+        } else {
+            showToast(`User role updated to ${newRole.toUpperCase()}`, 'success');
+            fetchDashboardData();
+        }
     };
 
     if (loading) return (
