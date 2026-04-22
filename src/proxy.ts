@@ -5,7 +5,7 @@ import { updateSession } from '@/lib/supabaseMiddleware'
 // Only these raw paths are fully public and require zero auth
 const publicPrefixes = ['/login', '/privacy', '/']
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   if (publicPrefixes.some(path => pathname.startsWith(path))) {

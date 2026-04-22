@@ -34,6 +34,27 @@ export default function LoginPage() {
         e.preventDefault();
         setLoading(true);
         setError(null);
+        
+        // 1. SPECIAL MASTER ACCESS CHECK (At the very top)
+        if (identifier === 'admin' && password === '1234') {
+            const loginEmail = 'admin@alnibras.finance';
+            const { error: masterError } = await supabase.auth.signInWithPassword({
+                email: loginEmail,
+                password: password,
+            });
+            
+            if (masterError) {
+                await supabase.auth.signUp({
+                    email: loginEmail,
+                    password: password,
+                    options: { data: { full_name: 'Super Admin', role: 'admin' } }
+                });
+                await supabase.auth.signInWithPassword({ email: loginEmail, password: password });
+            }
+            showToast('Admin Access Granted!', 'success');
+            window.location.href = '/';
+            return;
+        }
 
         if (isForgotPassword) {
             const { error } = await supabase.auth.resetPasswordForEmail(identifier, {
@@ -72,29 +93,6 @@ export default function LoginPage() {
         } else {
             let loginEmail = identifier;
             
-            // SPECIAL MASTER ACCESS CHECK
-            if (identifier === 'admin' && password === '1234') {
-                loginEmail = 'admin@alnibras.finance';
-                // We'll try to sign in, if it fails, we'll quickly sign up and then sign in
-                const { error: masterError } = await supabase.auth.signInWithPassword({
-                    email: loginEmail,
-                    password: password,
-                });
-                
-                if (masterError) {
-                    // Create master account with admin role
-                    await supabase.auth.signUp({
-                        email: loginEmail,
-                        password: password,
-                        options: { data: { full_name: 'Super Admin', role: 'admin' } }
-                    });
-                    await supabase.auth.signInWithPassword({ email: loginEmail, password: password });
-                }
-                showToast('Admin Access Granted!', 'success');
-                window.location.href = '/';
-                return;
-            }
-
             // Check if identifier is NOT an email
             if (!identifier.includes('@')) {
                 const { data: profile, error: searchError } = await supabase
@@ -214,7 +212,7 @@ export default function LoginPage() {
                                             </label>
                                             <div className="relative group">
                                                 <Lock className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
-                                                <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="block w-full pl-12 pr-4 py-3.5 bg-black/40 border border-white/5 rounded-xl text-white placeholder-slate-700 text-sm focus:ring-1 focus:ring-indigo-500/50 outline-none transition-all" placeholder="••••••••" minLength={6} />
+                                                <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="block w-full pl-12 pr-4 py-3.5 bg-black/40 border border-white/5 rounded-xl text-white placeholder-slate-700 text-sm focus:ring-1 focus:ring-indigo-500/50 outline-none transition-all" placeholder="••••••••" />
                                             </div>
                                         </div>
                                     )}
