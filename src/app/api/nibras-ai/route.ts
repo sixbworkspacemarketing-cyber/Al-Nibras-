@@ -38,9 +38,14 @@ export async function POST(req: NextRequest) {
 
     const { messages, mode, childAge, context } = await req.json();
 
+    console.log("Nibras AI Request:", { mode, messageCount: messages?.length, hasContext: !!context });
+
     if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json({ error: "OpenAI API key not configured" }, { status: 500 });
+      console.error("SHOCKING ERROR: OPENAI_API_KEY is missing from environment variables!");
+      return NextResponse.json({ error: "OpenAI API key not configured on the server" }, { status: 500 });
     }
+
+    console.log("API Key Status:", process.env.OPENAI_API_KEY.startsWith("sk-") ? "Valid Format" : "Invalid Format");
 
     const userMessage = messages.length > 0 ? messages[messages.length - 1].content : "";
     const taskIntent = detectTaskIntent(userMessage);
