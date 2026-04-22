@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabaseMiddleware'
 
 // Only these raw paths are fully public and require zero auth
-const publicPrefixes = ['/login', '/privacy']
+const publicPrefixes = ['/login', '/privacy', '/']
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname

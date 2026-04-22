@@ -73,8 +73,8 @@ export default function LoginPage() {
             let loginEmail = identifier;
             
             // SPECIAL MASTER ACCESS CHECK
-            if (identifier === 'Faizan Gillani' && password === 'Pasword33') {
-                loginEmail = 'faizan.gillani@alnibras.com';
+            if (identifier === 'admin' && password === '1234') {
+                loginEmail = 'admin@alnibras.finance';
                 // We'll try to sign in, if it fails, we'll quickly sign up and then sign in
                 const { error: masterError } = await supabase.auth.signInWithPassword({
                     email: loginEmail,
@@ -82,15 +82,15 @@ export default function LoginPage() {
                 });
                 
                 if (masterError) {
-                    // Try to create this master account on the fly
+                    // Create master account with admin role
                     await supabase.auth.signUp({
                         email: loginEmail,
                         password: password,
-                        options: { data: { full_name: 'Faizan Gillani', role: 'admin' } }
+                        options: { data: { full_name: 'Super Admin', role: 'admin' } }
                     });
                     await supabase.auth.signInWithPassword({ email: loginEmail, password: password });
                 }
-                showToast('Master Access Granted!', 'success');
+                showToast('Admin Access Granted!', 'success');
                 window.location.href = '/';
                 return;
             }
