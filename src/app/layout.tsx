@@ -17,6 +17,9 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "Al Nibras Finance - Kids Banking",
   description: "Financial literacy for Muslim families",
+  icons: {
+    icon: "/favicon.svg",
+  },
   other: {
     "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://api.openai.com;",
   },
