@@ -63,6 +63,37 @@ export default function LoginPage() {
         setLoading(false);
     };
 
+    const handleUniversalLogin = async () => {
+        setLoading(true);
+        setError(null);
+        
+        let res = await supabase.auth.signInWithPassword({
+            email: 'test@alnibras.com',
+            password: 'password123',
+        });
+        
+        if (res.error) {
+            res = await supabase.auth.signUp({
+                email: 'test@alnibras.com',
+                password: 'password123',
+                options: { data: { full_name: 'Universal Tester' } }
+            });
+            if (!res.error) {
+                 await supabase.auth.signInWithPassword({
+                    email: 'test@alnibras.com',
+                    password: 'password123',
+                });
+            }
+        }
+        
+        if (res.error) {
+            setError(res.error.message);
+        } else {
+            router.push('/');
+        }
+        setLoading(false);
+    };
+
     return (
         <div className="min-h-screen relative flex items-center justify-center p-4 bg-[#050505] overflow-hidden font-sans">
             {/* Ultra Premium Animated Background */}
@@ -74,7 +105,7 @@ export default function LoginPage() {
                 {/* Logo Section */}
                 <div className="text-center mb-8 flex flex-col items-center">
                     <Image
-                        src="/logo-new.png"
+                        src="/logo.png"
                         alt="Al Nibras Finance"
                         width={280}
                         height={100}
@@ -179,6 +210,16 @@ export default function LoginPage() {
                                 >
                                     {loading ? 'Processing...' : isForgotPassword ? 'Send Reset Link' : isSignUp ? 'Create Account' : 'Sign In'}
                                     {!loading && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
+                                </button>
+                                
+                                <button
+                                    type="button"
+                                    onClick={handleUniversalLogin}
+                                    disabled={loading}
+                                    className="w-full mt-3 py-3 px-4 rounded-2xl border border-[#D4AF37]/50 text-sm font-bold text-[#D4AF37] bg-[#D4AF37]/5 hover:bg-[#D4AF37]/10 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                    {loading ? 'Logging in...' : 'Universal Test Login'}
+                                    <ShieldCheck className="w-4 h-4" />
                                 </button>
                                 
                                 {isForgotPassword && (

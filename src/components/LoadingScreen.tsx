@@ -27,9 +27,9 @@ export default function LoadingScreen() {
             className="w-40 h-40 rounded-3xl bg-gradient-to-br from-[#D4AF37]/20 to-[#997A1F]/10 border border-[#D4AF37]/30 flex items-center justify-center backdrop-blur-xl"
           >
             <img
-              src="/logo-new.png"
+              src="/logo.png"
               alt="Al Nibras Finance"
-              className="w-32 h-32 object-contain"
+              className="w-32 h-32 object-contain drop-shadow-xl"
             />
           </motion.div>
           <motion.div

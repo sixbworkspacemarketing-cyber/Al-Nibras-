@@ -80,7 +80,7 @@ export default function DashboardPage() {
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-10 gap-4">
                     <div className="flex items-center gap-4">
-                        <Image src="/logo-new.png" alt="Al Nibras" width={200} height={60} className="object-contain" />
+                        <Image src="/logo.png" alt="Al Nibras" width={200} height={60} className="object-contain" />
                     </div>
                     <div className="flex items-center gap-4">
                         <Link href="/" className="text-indigo-400 hover:text-indigo-300 font-bold text-sm flex items-center gap-2">

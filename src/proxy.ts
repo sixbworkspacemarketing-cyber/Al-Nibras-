@@ -2,12 +2,13 @@ import { type NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabaseMiddleware'
 
-const publicPaths = ['/login', '/privacy']
+const publicPrefixes = ['/login', '/privacy', '/parent-dashboard', '/child-dashboard']
 
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
-  if (publicPaths.some(path => pathname.startsWith(path))) {
+  // Allow root page and public routes without auth
+  if (pathname === '/' || publicPrefixes.some(path => pathname.startsWith(path))) {
     return NextResponse.next()
   }
 

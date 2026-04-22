@@ -1,8 +1,10 @@
 import NibrasAIChat from "@/components/NibrasAIChat";
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import "./globals.css";
 import { ThemeProvider } from "@/lib/ThemeContext";
 import { AppProvider } from "@/lib/AppContext";
+import { LanguageProvider } from "@/lib/LanguageContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -42,10 +44,12 @@ export default async function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} bg-black text-white antialiased`}>
         <ThemeProvider>
-          <AppProvider>
-            {children}
-            <NibrasAIChat mode="mentor" userName="Friend" />
-          </AppProvider>
+          <LanguageProvider>
+            <AppProvider>
+              {children}
+              <NibrasAIChat mode="mentor" userName="Friend" />
+            </AppProvider>
+          </LanguageProvider>
         </ThemeProvider>
         {SpeedInsightsComponent ? <SpeedInsightsComponent /> : null}
         {AnalyticsComponent ? <AnalyticsComponent /> : null}
