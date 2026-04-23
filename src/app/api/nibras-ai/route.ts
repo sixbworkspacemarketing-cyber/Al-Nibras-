@@ -29,18 +29,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "AI key not configured" }, { status: 500 });
     }
 
-    const userMessage = messages.length > 0 ? messages[messages.length - 1].content : "";
+    const userMessage = messages?.length > 0 ? messages[messages.length - 1].content : "";
     const taskIntent = detectTaskIntent(userMessage);
 
     let taskResult = null;
-    if (taskIntent && mode === "mentor" && context) {
-      taskResult = executeTask(taskIntent, {}, {
-        balance: context.balance || 0,
-        transactions: context.transactions || [],
-        goals: context.goals || [],
-        income: context.income || 0,
-        expenses: context.expenses || 0
-      });
+    try {
+      if (taskIntent && mode === "mentor" && context) {
+        taskResult = executeTask(taskIntent, {}, {
+          balance: context.balance || 0,
+          transactions: context.transactions || [],
+          goals: context.goals || [],
+          income: context.income || 0,
+          expenses: context.expenses || 0
+        });
+      }
+    } catch (taskError) {
+      console.warn("Task execution skipped:", taskError);
     }
 
     let systemPrompt = PROMPTS[mode as keyof typeof PROMPTS] || PROMPTS.mentor;
@@ -63,7 +67,7 @@ export async function POST(req: NextRequest) {
     const chat = model.startChat({
       history: history,
       generationConfig: {
-        maxOutputTokens: 500,
+        maxOutputTokens: 2048,
         temperature: 0.7,
       },
     });
@@ -100,7 +104,8 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error("Nibras AI Gemini Error:", error);
-    return NextResponse.json({ error: "AI service unavailable" }, { status: 500 });
+    console.error("Nibras AI Error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: "AI service unavailable", details: errorMessage }, { status: 500 });
   }
 }
