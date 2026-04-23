@@ -1,29 +1,15 @@
-import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, getRateLimitHeaders } from "@/lib/rateLimit";
 import { executeTask, detectTaskIntent } from "@/lib/ai-tasks";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY || "");
 
 const PROMPTS: Record<string, string> = {
   curiosity: "You are Nibras AI Mentor for Pakistani children. Spark curiosity. Islamic values natural. Never give final answer - always end with follow-up question. Simple Urdu/English mix.",
   mentor: "You are Nibras AI Mentor - Islamic financial advisor for Pakistani families. You can also EXECUTE TASKS when users ask about: Zakat calculation, savings ratio, goal progress, health score, or Barakah analysis. Simple Urdu/English mix. No riba. Practical Pakistan advice. Zakat, sadqa, halal - your core focus. Keep it concise.",
   parent: "You are Al Nibras Parent Coach. Abbas Hussain philosophy: school does not equal learning, first 10 years crucial, curiosity beats rote answers, humidity over arrogance, service over salary. Warm practical Urdu/English advice. Islamic parenting."
 };
-
-function shouldExecuteTask(userMessage: string): boolean {
-  const patterns = [
-    "calculate", "zakat", "zsakat", "zak.t",
-    "saving ratio", "ratio", "save percent",
-    "goal progress", "bicycle", "console",
-    "health score", "financial health",
-    "barakah", "blessing", "sadaqah", "charity"
-  ];
-  const lower = userMessage.toLowerCase();
-  return patterns.some(p => lower.includes(p));
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -38,14 +24,10 @@ export async function POST(req: NextRequest) {
 
     const { messages, mode, childAge, context } = await req.json();
 
-    console.log("Nibras AI Request:", { mode, messageCount: messages?.length, hasContext: !!context });
-
-    if (!process.env.OPENAI_API_KEY) {
-      console.error("SHOCKING ERROR: OPENAI_API_KEY is missing from environment variables!");
-      return NextResponse.json({ error: "OpenAI API key not configured on the server" }, { status: 500 });
+    if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+      console.error("SHOCKING ERROR: GOOGLE_GENERATIVE_AI_API_KEY is missing!");
+      return NextResponse.json({ error: "AI key not configured" }, { status: 500 });
     }
-
-    console.log("API Key Status:", process.env.OPENAI_API_KEY.startsWith("sk-") ? "Valid Format" : "Invalid Format");
 
     const userMessage = messages.length > 0 ? messages[messages.length - 1].content : "";
     const taskIntent = detectTaskIntent(userMessage);
@@ -70,28 +52,33 @@ export async function POST(req: NextRequest) {
       systemPrompt += `\nUSER DATA: ${taskResult.details}`;
     }
 
-    const openaiMessages = [
-      { role: "system", content: systemPrompt },
-      ...messages.map((msg: { role: string; content: string }) => ({
-        role: msg.role === "assistant" ? "assistant" : msg.role,
-        content: msg.content,
-      }))
-    ];
+    // Convert history to Gemini format
+    const history = messages.slice(0, -1).map((msg: any) => ({
+      role: msg.role === "assistant" ? "model" : "user",
+      parts: [{ text: msg.content }],
+    }));
 
-    const stream = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: openaiMessages,
-      stream: true,
-      max_tokens: 500,
-      temperature: 0.7,
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    
+    const chat = model.startChat({
+      history: history,
+      generationConfig: {
+        maxOutputTokens: 500,
+        temperature: 0.7,
+      },
     });
+
+    // We include the system prompt in the user's message for better instruction following in Flash
+    const finalPrompt = `[SYSTEM INSTRUCTION: ${systemPrompt}]\n\nUser: ${userMessage}`;
+    
+    const result = await chat.sendMessageStream(finalPrompt);
 
     const encoder = new TextEncoder();
     const readable = new ReadableStream({
       async start(controller) {
         try {
-          for await (const chunk of stream) {
-            const text = chunk.choices[0]?.delta?.content || "";
+          for await (const chunk of result.stream) {
+            const text = chunk.text();
             if (text) {
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`));
             }
@@ -113,7 +100,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error("Nibras AI Error:", error);
+    console.error("Nibras AI Gemini Error:", error);
     return NextResponse.json({ error: "AI service unavailable" }, { status: 500 });
   }
 }
